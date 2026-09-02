@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Caption Generator — Everline</title>
+  <style>
+    :root{
+      --bg:#0b0b0b;
+      --panel:#0f0f0f;
+      --muted:#9a9187;
+      --gold:#b78a3a; /* matte gold */
+      --gold-2:#d0a95a;
+      --border:rgba(255,255,255,0.04);
+      --glass:rgba(255,255,255,0.02);
+      --accent:var(--gold);
+      --max-width:980px;
+      --radius:10px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color: #ece7df;
+    }
+    html,body{height:100%;background:linear-gradient(180deg,#070707 0%, #0b0b0b 100%);margin:0;}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+    .card{width:100%;max-width:var(--max-width);background:var(--panel);border-radius:var(--radius);box-shadow:0 6px 30px rgba(0,0,0,0.6);border:1px solid var(--border);overflow:hidden}
+    header{padding:28px 32px;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:16px}
+    .brand{display:flex;flex-direction:column}
+    .title{font-size:20px;font-weight:700;letter-spacing:0.2px}
+    .tag{font-size:13px;color:var(--muted);margin-top:6px}
+
+    .content{display:grid;grid-template-columns:1fr 420px;gap:28px;padding:28px 32px}
+    @media (max-width:900px){.content{grid-template-columns:1fr;}}
+
+    /* inputs */
+    .panel{background:linear-gradient(180deg,rgba(255,255,255,0.012), rgba(255,255,255,0.008));padding:18px;border-radius:8px;border:1px solid var(--border)}
+    .field{display:flex;flex-direction:column;margin-bottom:12px}
+    label{font-size:13px;color:var(--muted);margin-bottom:8px}
+    select,input[type="text"],textarea{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:10px 12px;border-radius:8px;color:inherit;font-size:15px}
+    input[type="text"]::placeholder, textarea::placeholder{color:rgba(236,231,223,0.45)}
+    textarea{min-height:80px;resize:vertical}
+    .row{display:flex;gap:12px}
+    .small{flex:1}
+
+    /* buttons */
+    .actions{display:flex;gap:12px;margin-top:8px}
+    button.primary{background:linear-gradient(180deg,var(--gold),var(--gold-2));color:#07110b;border:none;padding:12px 16px;border-radius:10px;font-weight:700;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:12px 14px;border-radius:10px;cursor:pointer}
+    button:disabled{opacity:0.6;cursor:not-allowed}
+
+    /* outputs */
+    .outputs{display:flex;flex-direction:column;gap:14px}
+    .output-block{background:linear-gradient(180deg,rgba(255,255,255,0.01), rgba(255,255,255,0.006));padding:14px;border-radius:8px;border:1px solid var(--border);position:relative}
+    .output-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .output-title{font-size:13px;color:var(--muted)}
+    .output-text{white-space:pre-wrap;font-size:15px;line-height:1.45;color:var(--gold-2);}
+    .output-subtext{color:var(--muted);font-size:13px}
+    .copy{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:6px 8px;border-radius:8px;cursor:pointer}
+
+    /* hooks list */
+    .hooks{display:flex;flex-direction:column;gap:8px}
+    .hook{display:flex;align-items:flex-start;gap:8px}
+    .hook .num{width:26px;height:26px;border-radius:6px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:700}
+
+    /* footer */
+    footer{padding:18px 32px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .note{color:var(--muted);font-size:13px}
+
+    /* validation */
+    .error{color:#ffb4b4;font-size:13px;margin-top:6px}
+
+    /* loading */
+    .loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:14px}
+    .spinner{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,0.06);border-top-color:var(--gold);animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* visual flourish */
+    .logo{width:46px;height:46px;border-radius:8px;background:linear-gradient(180deg,var(--gold),var(--gold-2));display:flex;align-items:center;justify-content:center;color:#07110b;font-weight:800}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="application" aria-labelledby="appTitle">
+      <header>
+        <div class="logo">E</div>
+        <div class="brand">
+          <div id="appTitle" class="title">Caption Generator</div>
+          <div class="tag">Generate stronger captions faster — Everline</div>
+        </div>
+      </header>
+
+      <div class="content">
+        <div>
+          <div class="panel" id="inputPanel">
+            <div class="field">
+              <label for="platform">Platform *</label>
+              <select id="platform" required>
+                <option value="">Select platform</option>
+                <option>Instagram</option>
+                <option>TikTok</option>
+                <option>LinkedIn</option>
+                <option>X</option>
+                <option>Threads</option>
+                <option>Facebook</option>
+              </select>
+              <div id="platformError" class="error" style="display:none">Please select a platform.</div>
+            </div>
+
+            <div class="field">
+              <label for="topic">Topic *</label>
+              <input id="topic" type="text" placeholder="What is the post about?" />
+              <div id="topicError" class="error" style="display:none">Please enter a topic.</div>
+            </div>
+
+            <div class="field">
+              <label for="goal">Goal *</label>
+              <select id="goal" required>
+                <option value="">Select goal</option>
+                <option>engagement</option>
+                <option>authority</option>
+                <option>awareness</option>
+                <option>leads</option>
+                <option>product sales</option>
+                <option>newsletter signup</option>
+              </select>
+              <div id="goalError" class="error" style="display:none">Please select a goal.</div>
+            </div>
+
+            <div class="row">
+              <div class="field small">
+                <label for="niche">Niche</label>
+                <input id="niche" type="text" placeholder="e.g., creator business, fitness" />
+              </div>
+              <div class="field small">
+                <label for="tone">Tone</label>
+                <select id="tone">
+                  <option value="">Select tone</option>
+                  <option>bold</option>
+                  <option>clean</option>
+                  <option>warm</option>
+                  <option>luxury</option>
+                  <option>educational</option>
+                  <option>witty</option>
+                  <option>persuasive</option>
+                  <option>minimalist</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="audience">Audience</label>
+              <input id="audience" type="text" placeholder="Who are you speaking to?" />
+            </div>
+
+            <div class="field">
+              <label for="cta">CTA</label>
+              <input id="cta" type="text" placeholder="Follow for more tips" />
+            </div>
+
+            <div class="field">
+              <label for="keywords">Keywords</label>
+              <input id="keywords" type="text" placeholder="comma, separated, keywords" />
+            </div>
+
+            <div class="field">
+              <label for="offer">Offer</label>
+              <input id="offer" type="text" placeholder="e.g., 10% off, free guide" />
+            </div>
+
+            <div class="field">
+              <label>Caption length</label>
+              <div class="row">
+                <label style="flex:1"><input type="radio" name="length" value="short" checked /> short</label>
+                <label style="flex:1"><input type="radio" name="length" value="medium" /> medium</label>
+                <label style="flex:1"><input type="radio" name="length" value="long" /> long</label>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button id="generateBtn" class="primary">Generate Caption</button>
+              <button id="resetBtn" class="ghost">Reset</button>
+              <div id="loading" style="display:none;margin-left:auto" class="loading"><div class="spinner"></div><div>Generating caption...</div></div>
+            </div>
+
+            <div id="emptyHint" class="note" style="margin-top:12px">Enter your topic, platform, and goal to generate a caption.</div>
+          </div>
+        </div>
+
+        <aside>
+          <div class="outputs">
+            <div class="output-block" id="hooksBlock">
+              <div class="output-header">
+                <div class="output-title">Hook Options</div>
+                <button class="copy" data-copy-target="hooks">Copy All</button>
+              </div>
+              <div class="hooks" id="hooks">
+                <div class="hook"><div class="num">1</div><div class="output-text" id="hook1">—</div><button class="copy" data-copy-target="hook1">Copy</button></div>
+                <div class="hook"><div class="num">2</div><div class="output-text" id="hook2">—</div><button class="copy" data-copy-target="hook2">Copy</button></div>
+                <div class="hook"><div class="num">3</div><div class="output-text" id="hook3">—</div><button class="copy" data-copy-target="hook3">Copy</button></div>
+              </div>
+            </div>
+
+            <div class="output-block" id="mainBlock">
+              <div class="output-header">
+                <div>
+                  <div class="output-title">Main Caption</div>
+                  <div class="output-subtext">Ready-to-publish caption</div>
+                </div>
+                <button class="copy" data-copy-target="main">Copy</button>
+              </div>
+              <div class="output-text" id="main">—</div>
+            </div>
+
+            <div class="output-block" id="ctaBlock">
+              <div class="output-header">
+                <div class="output-title">CTA</div>
+                <button class="copy" data-copy-target="ctaOut">Copy</button>
+              </div>
+              <div class="output-text" id="ctaOut">—</div>
+            </div>
+
+            <div class="output-block" id="tagsBlock">
+              <div class="output-header">
+                <div class="output-title">Hashtags</div>
+                <button class="copy" data-copy-target="hashtags">Copy</button>
+              </div>
+              <div class="output-text" id="hashtags">—</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <footer>
+        <div class="note">Sovereign Minimalism — Everline Media Systems</div>
+        <div class="note">Built locally — no accounts or APIs</div>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    // Simple local caption generation logic inspired by prompts.md & product-spec.md
+    const el = id => document.getElementById(id);
+    const q = sel => document.querySelector(sel);
+
+    function getInputs(){
+      const platform = el('platform').value.trim();
+      const topic = el('topic').value.trim();
+      const goal = el('goal').value.trim();
+      const niche = el('niche').value.trim();
+      const tone = el('tone').value.trim();
+      const audience = el('audience').value.trim();
+      const cta = el('cta').value.trim();
+      const keywords = el('keywords').value.trim();
+      const offer = el('offer').value.trim();
+      const length = (document.querySelector('input[name="length"]:checked')||{}).value || 'short';
+      return {platform,topic,goal,niche,tone,audience,cta,keywords,offer,length};
+    }
+
+    function validate(inputs){
+      let ok = true;
+      if(!inputs.platform){el('platformError').style.display='block';ok=false}else el('platformError').style.display='none';
+      if(!inputs.topic){el('topicError').style.display='block';ok=false}else el('topicError').style.display='none';
+      if(!inputs.goal){el('goalError').style.display='block';ok=false}else el('goalError').style.display='none';
+      return ok;
+    }
+
+    function seedWordsFromKeywords(k){
+      if(!k) return [];
+      return k.split(',').map(s=>s.trim()).filter(Boolean).slice(0,6);
+    }
+
+    function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+    function generateHooks(inputs){
+      const topic = inputs.topic;
+      const platform = inputs.platform;
+      const goal = inputs.goal;
+      const tone = inputs.tone || '';
+      const seeds = seedWordsFromKeywords(inputs.keywords);
+
+      const starters = [
+        `You won't believe this about ${topic}`,
+        `Stop scrolling—${topic} matters because...`,
+        `Don't make this ${topic} mistake again`,
+        `Quick truth: ${topic} can change how you ${goal}`,
+        `If you care about ${topic}, read this`,
+        `Here's a simple take on ${topic}`
+      ];
+
+      const short = [`${topic}: a little-known fix`,`${topic}? Let's simplify this`,`${topic} made simple`];
+
+      const hooks = [];
+      hooks.push(pick(starters));
+      hooks.push(pick(short));
+      // third hook more curiosity-based
+      const c3 = seeds.length ? `What if ${seeds[0]} could improve ${topic}?` : `What if this one change improved ${topic}?`;
+      hooks.push(c3);
+      return hooks;
+    }
+
+    function adaptLength(text,length){
+      if(length==='short') return text.split('.').slice(0,1).join('.');
+      if(length==='medium') return text.split('.').slice(0,3).join('.');
+      return text; // long
+    }
+
+    function generateMainCaption(inputs){
+      const {platform,topic,goal,niche,tone,audience,cta,keywords,offer,length} = inputs;
+      const seeds = seedWordsFromKeywords(keywords);
+      const opening = pick([`${topic} isn’t as complicated as it seems.`, `Here’s a quick idea about ${topic}.`,`A simple way to think about ${topic}:`]);
+      const bodyParts = [];
+      if(niche) bodyParts.push(`For ${niche}${audience? ' — ' + audience : ''}`);
+      if(seeds.length) bodyParts.push(`Focus on ${seeds.slice(0,3).join(', ')}`);
+
+      let persuasion = '';
+      if(goal==='product sales' || goal==='leads' || goal==='newsletter signup'){
+        persuasion = offer ? `Limited: ${offer}.` : `Learn more via the link.`;
+      } else if(goal==='authority'){
+        persuasion = `This approach is backed by experience in ${niche || 'the field'}.`;
+      } else if(goal==='engagement'){
+        persuasion = `Tell me your take — I'd love to hear.`;
+      } else if(goal==='awareness'){
+        persuasion = `Share this with someone who needs it.`;
+      }
+
+      let toneLine = '';
+      if(tone==='bold') toneLine = 'Straightforward, no fluff.';
+      if(tone==='clean') toneLine = 'Minimal and clear.';
+      if(tone==='warm') toneLine = 'Human-first and approachable.';
+      if(tone==='luxury') toneLine = 'Refined and considered.';
+      if(tone==='educational') toneLine = 'A concise lesson you can use.';
+      if(tone==='witty') toneLine = "A light twist to keep it interesting.";
+      if(tone==='persuasive') toneLine = 'A clear next step to act on.';
+      if(tone==='minimalist') toneLine = 'Short. Sharp. Useful.';
+
+      const base = [opening, ...(bodyParts.length? bodyParts: [`Why it matters: ${topic} affects results.`]), ...(seeds.length? [`Try: ${seeds.slice(0,4).join(', ')}`]:[]), toneLine, persuasion];
+      const out = base.filter(Boolean).join('\n\n');
+      return adaptLength(out,length);
+    }
+
+    function generateCTA(inputs){
+      if(inputs.cta) return inputs.cta;
+      const goal = inputs.goal;
+      if(goal==='newsletter signup') return 'Sign up to my newsletter for more.';
+      if(goal==='leads') return 'DM me to learn more.';
+      if(goal==='product sales') return 'Check the link to get yours.';
+      if(goal==='authority') return 'Follow for more frameworks and insights.';
+      if(goal==='engagement') return 'What do you think? Comment below.';
+      if(goal==='awareness') return 'Share this if it helped.';
+      return 'Follow for more.';
+    }
+
+    function generateHashtags(inputs){
+      const seeds = seedWordsFromKeywords(inputs.keywords);
+      const niche = inputs.niche ? inputs.niche.split(' ')[0] : '';
+      const base = [];
+      if(niche) base.push(`#${niche.replace(/[^a-zA-Z0-9]/g,'')}`);
+      base.push(`#${inputs.platform.toLowerCase()}`);
+      if(seeds.length) base.push(...seeds.map(s=>`#${s.replace(/[^a-zA-Z0-9]/g,'')}`));
+      // ensure unique & limit
+      const uniq = [...new Set(base)].slice(0,8);
+      return uniq.join(' ');
+    }
+
+    function setOutputs(hooks, main, ctaOut, hashtags){
+      el('hook1').textContent = hooks[0] || '—';
+      el('hook2').textContent = hooks[1] || '—';
+      el('hook3').textContent = hooks[2] || '—';
+      el('main').textContent = main || '—';
+      el('ctaOut').textContent = ctaOut || '—';
+      el('hashtags').textContent = hashtags || '—';
+    }
+
+    function disableActions(state){
+      el('generateBtn').disabled = state;
+      el('resetBtn').disabled = state;
+      document.querySelectorAll('.copy').forEach(b=>b.disabled = state);
+      document.getElementById('loading').style.display = state ? 'flex' : 'none';
+    }
+
+    async function onGenerate(){
+      const inputs = getInputs();
+      if(!validate(inputs)) return;
+      disableActions(true);
+      // simulate loading
+      await new Promise(r=>setTimeout(r,600));
+
+      // generate
+      const hooks = generateHooks(inputs);
+      const main = generateMainCaption(inputs);
+      const ctaOut = generateCTA(inputs);
+      const hashtags = generateHashtags(inputs);
+
+      setOutputs(hooks, main, ctaOut, hashtags);
+      el('emptyHint').style.display='none';
+
+      disableActions(false);
+    }
+
+    function onReset(){
+      ['platform','topic','goal','niche','tone','audience','cta','keywords','offer'].forEach(id=>{el(id).value=''});
+      document.querySelector('input[name="length"][value="short"]').checked = true;
+      setOutputs([], '—', '—', '—');
+      el('emptyHint').style.display='block';
+      el('platformError').style.display='none';
+      el('topicError').style.display='none';
+      el('goalError').style.display='none';
+    }
+
+    // copy handler
+    async function onCopy(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        alert('Copied to clipboard');
+      }catch(e){
+        // fallback
+        const ta = document.createElement('textarea');ta.value = text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');alert('Copied to clipboard')}catch(err){alert('Could not copy')};ta.remove();
+      }
+    }
+
+    document.addEventListener('click', e=>{
+      const cp = e.target.closest('.copy');
+      if(!cp) return;
+      const target = cp.getAttribute('data-copy-target');
+      if(!target) return;
+      if(target==='hooks'){
+        const all = [el('hook1').textContent, el('hook2').textContent, el('hook3').textContent].filter(t=>t && t!=='—').join('\n\n');
+        if(!all) {alert('Nothing to copy'); return}
+        onCopy(all);return;
+      }
+      const node = el(target);
+      if(!node) {alert('Nothing to copy'); return}
+      const txt = node.textContent;
+      if(!txt || txt==='—') {alert('Nothing to copy'); return}
+      onCopy(txt);
+    });
+
+    // wire buttons
+    el('generateBtn').addEventListener('click', onGenerate);
+    el('resetBtn').addEventListener('click', onReset);
+
+    // keyboard: Enter on topic triggers generate
+    el('topic').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); onGenerate(); } });
+
+    // initial state
+    onReset();
+
+  </script>
+</body>
+</html>
