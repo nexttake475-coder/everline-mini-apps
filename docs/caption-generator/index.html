@@ -231,7 +231,7 @@
 
       <footer>
         <div class="note">Sovereign Minimalism — Everline Media Systems</div>
-        <div class="note">Built locally — no accounts or APIs</div>
+        <div class="note">Private by design — your inputs stay in this browser</div>
       </footer>
     </div>
   </div>
@@ -271,45 +271,46 @@
     function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
 
     function generateHooks(inputs){
-      const topic = inputs.topic;
-      const platform = inputs.platform;
-      const goal = inputs.goal;
-      const tone = inputs.tone || '';
+      const {topic, platform, goal} = inputs;
       const seeds = seedWordsFromKeywords(inputs.keywords);
-
-      const starters = [
-        `You won't believe this about ${topic}`,
-        `Stop scrolling—${topic} matters because...`,
-        `Don't make this ${topic} mistake again`,
-        `Quick truth: ${topic} can change how you ${goal}`,
-        `If you care about ${topic}, read this`,
-        `Here's a simple take on ${topic}`
-      ];
-
-      const short = [`${topic}: a little-known fix`,`${topic}? Let's simplify this`,`${topic} made simple`];
-
-      const hooks = [];
-      hooks.push(pick(starters));
-      hooks.push(pick(short));
-      // third hook more curiosity-based
-      const c3 = seeds.length ? `What if ${seeds[0]} could improve ${topic}?` : `What if this one change improved ${topic}?`;
-      hooks.push(c3);
-      return hooks;
+      const platformHooks = {
+        Instagram: [`Save this if ${topic} is on your mind.`, `The part nobody tells you about ${topic}:`],
+        TikTok: [`Before you try ${topic}, watch this.`, `The fastest way to rethink ${topic}:`],
+        LinkedIn: [`A practical lesson about ${topic}:`, `Most teams overcomplicate ${topic}.`],
+        X: [`A sharper way to think about ${topic}:`, `${topic}, without the noise:`],
+        Threads: [`Can we talk about ${topic}?`, `A thought about ${topic} I cannot shake:`],
+        Facebook: [`Here is what I learned about ${topic}.`, `If you are working on ${topic}, this may help.`]
+      };
+      const hooks = platformHooks[platform] || [`A better way to approach ${topic}:`];
+      const third = seeds.length
+        ? `${seeds[0]} may be the missing piece in ${topic}.`
+        : `One small change can improve how you approach ${topic}.`;
+      return [pick(hooks), `${topic}: what matters most for ${goal}.`, third];
     }
 
-    function adaptLength(text,length){
-      if(length==='short') return text.split('.').slice(0,1).join('.');
-      if(length==='medium') return text.split('.').slice(0,3).join('.');
-      return text; // long
+    function selectSections(sections,length){
+      const limit = length === 'short' ? 2 : length === 'medium' ? 4 : sections.length;
+      return sections.filter(Boolean).slice(0,limit).join('\n\n');
     }
 
     function generateMainCaption(inputs){
       const {platform,topic,goal,niche,tone,audience,cta,keywords,offer,length} = inputs;
       const seeds = seedWordsFromKeywords(keywords);
-      const opening = pick([`${topic} isn’t as complicated as it seems.`, `Here’s a quick idea about ${topic}.`,`A simple way to think about ${topic}:`]);
-      const bodyParts = [];
-      if(niche) bodyParts.push(`For ${niche}${audience? ' — ' + audience : ''}`);
-      if(seeds.length) bodyParts.push(`Focus on ${seeds.slice(0,3).join(', ')}`);
+      const opening = pick(generateHooks(inputs));
+      const platformGuidance = {
+        Instagram: 'Make the first line earn the pause, then give the reader one clear takeaway.',
+        TikTok: 'Lead with the tension, keep the pace quick, and make every line easy to say aloud.',
+        LinkedIn: 'State the insight, explain the business consequence, and finish with a useful principle.',
+        X: 'Compress the idea to its sharpest point. Remove every sentence that does not add meaning.',
+        Threads: 'Write it like a useful observation shared with one thoughtful person.',
+        Facebook: 'Use a clear story or lesson that invites a real conversation.'
+      };
+      const audienceLine = audience
+        ? `For ${audience}${niche ? ` in ${niche}` : ''}, the practical shift is simple:`
+        : niche ? `For people working in ${niche}, the practical shift is simple:` : '';
+      const actionLine = seeds.length
+        ? `Start by focusing on ${seeds.slice(0,3).join(', ')}.`
+        : `Choose one useful point about ${topic} and make it specific enough to act on.`;
 
       let persuasion = '';
       if(goal==='product sales' || goal==='leads' || goal==='newsletter signup'){
@@ -322,19 +323,25 @@
         persuasion = `Share this with someone who needs it.`;
       }
 
-      let toneLine = '';
-      if(tone==='bold') toneLine = 'Straightforward, no fluff.';
-      if(tone==='clean') toneLine = 'Minimal and clear.';
-      if(tone==='warm') toneLine = 'Human-first and approachable.';
-      if(tone==='luxury') toneLine = 'Refined and considered.';
-      if(tone==='educational') toneLine = 'A concise lesson you can use.';
-      if(tone==='witty') toneLine = "A light twist to keep it interesting.";
-      if(tone==='persuasive') toneLine = 'A clear next step to act on.';
-      if(tone==='minimalist') toneLine = 'Short. Sharp. Useful.';
+      const toneClosers = {
+        bold: 'Clarity creates momentum. Make the move.',
+        clean: 'Keep the idea clear, useful, and easy to apply.',
+        warm: 'You do not have to perfect it before you begin.',
+        luxury: 'The strongest result is often the most considered one.',
+        educational: 'The principle: specificity makes an idea more useful.',
+        witty: 'Less staring at the cursor. More publishing.',
+        persuasive: 'Turn the insight into one clear next action.',
+        minimalist: 'Clear idea. Clean execution.'
+      };
 
-      const base = [opening, ...(bodyParts.length? bodyParts: [`Why it matters: ${topic} affects results.`]), ...(seeds.length? [`Try: ${seeds.slice(0,4).join(', ')}`]:[]), toneLine, persuasion];
-      const out = base.filter(Boolean).join('\n\n');
-      return adaptLength(out,length);
+      return selectSections([
+        opening,
+        audienceLine,
+        platformGuidance[platform],
+        actionLine,
+        toneClosers[tone] || 'Make the next step clear and useful.',
+        persuasion
+      ], length);
     }
 
     function generateCTA(inputs){
@@ -351,10 +358,9 @@
 
     function generateHashtags(inputs){
       const seeds = seedWordsFromKeywords(inputs.keywords);
-      const niche = inputs.niche ? inputs.niche.split(' ')[0] : '';
-      const base = [];
-      if(niche) base.push(`#${niche.replace(/[^a-zA-Z0-9]/g,'')}`);
-      base.push(`#${inputs.platform.toLowerCase()}`);
+      const base = [`#${inputs.platform.toLowerCase()}`, '#contentstrategy'];
+      if(inputs.niche) base.push(`#${inputs.niche.replace(/[^a-zA-Z0-9]/g,'')}`);
+      base.push(`#${inputs.topic.split(/\s+/).slice(0,3).join('').replace(/[^a-zA-Z0-9]/g,'')}`);
       if(seeds.length) base.push(...seeds.map(s=>`#${s.replace(/[^a-zA-Z0-9]/g,'')}`));
       // ensure unique & limit
       const uniq = [...new Set(base)].slice(0,8);

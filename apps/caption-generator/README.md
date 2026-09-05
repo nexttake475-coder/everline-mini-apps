@@ -2,6 +2,18 @@
 
 A focused mini app by Everline Media Systems designed to help creators generate stronger social media captions faster.
 
+## Current Release
+
+Caption Generator V1.1 — Paid Launch Edition
+
+- Canonical price: $19
+- Delivery: downloadable ZIP
+- Checkout: Shopify and Gumroad
+- Runtime: local browser; no account or API key required
+- Buyer guide: `buyer-quick-start.md`
+- Fulfillment runbook: `fulfillment-setup.md`
+- License: `personal-use-license.txt`
+
 ## Purpose
 Caption Generator transforms a simple content idea into:
 - hook options

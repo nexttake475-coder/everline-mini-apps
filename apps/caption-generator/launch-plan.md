@@ -23,6 +23,10 @@ The goal is:
 - workflow proof
 - ecosystem momentum
 
+## V1.1 Launch Decision
+
+Caption Generator will launch as a $19 downloadable browser app through both Shopify and Gumroad. Both channels use one canonical buyer ZIP and the same product promise. The buyer ZIP is distributed through checkout fulfillment and is not committed to the public repository.
+
 ---
 
 # Strategic Positioning
